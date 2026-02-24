@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-time patient feedback intelligence dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">✦</div>
+    <div class="brand-text">
+      <span class="brand-name">Patient Experience</span>
+      <span class="brand-sub">Analytics Platform</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">COMMAND CENTER</div>
+    <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">◈</span><span>Dashboard</span>
+    </a>
+    <a class="nav-item" data-page="patients" onclick="navigate('patients')">
+      <span class="nav-icon">◉</span><span>Patients</span>
+    </a>
+    <a class="nav-item" data-page="register" onclick="navigate('register')">
+      <span class="nav-icon">⊕</span><span>Register Patient</span>
+    </a>
+
+    <div class="nav-section-label">OPERATIONS</div>
+    <a class="nav-item" data-page="complaints" onclick="navigate('complaints')">
+      <span class="nav-icon">◎</span><span>Complaints</span>
+      <span class="nav-badge" id="complaints-badge"></span>
+    </a>
+    <a class="nav-item" data-page="submit-complaint" onclick="navigate('submit-complaint')">
+      <span class="nav-icon">⊞</span><span>Submit Complaint</span>
+    </a>
+    <a class="nav-item" data-page="analytics" onclick="navigate('analytics')">
+      <span class="nav-icon">◑</span><span>Analytics</span>
+    </a>
+
+    <div class="nav-section-label">SYSTEM</div>
+    <a class="nav-item" data-page="notifications" onclick="navigate('notifications')">
+      <span class="nav-icon">◆</span><span>Notifications</span>
+      <span class="nav-badge critical" id="notif-badge"></span>
+    </a>
+    <a class="nav-item" data-page="chatbot" onclick="navigate('chatbot')">
+      <span class="nav-icon">◇</span><span>AI Assistant</span>
+      <span class="nav-tag">AI</span>
+    </a>
+    <a class="nav-item" data-page="admin" onclick="navigate('admin')">
+      <span class="nav-icon">⬡</span><span>Admin Panel</span>
+    </a>
+    <a class="nav-item" data-page="settings" onclick="navigate('settings')">
+      <span class="nav-icon">◈</span><span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="status-dot"></div>
+    <span>System Online</span>
+  </div>
+</aside>
+
+<!-- ── Main Content ───────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="page-title" id="page-title">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="live-time"></div>
+      <button class="notif-btn" onclick="navigate('notifications')">
+        🔔 <span class="notif-count" id="topbar-notif-count">0</span>
+      </button>
+      <div class="topbar-avatar">AD</div>
+    </div>
+  </header>
+
+  <!-- Pages Container -->
+  <div class="pages-container">
+
+    <!-- ─── DASHBOARD PAGE ─── -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Command Center</h1>
+        <p>Real-time hospital operations overview</p>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#4fc3f7">◉</div>
+          <div class="metric-body">
+            <div class="metric-value" id="m-patients">—</div>
+            <div class="metric-label">Total Feedback Received</div>
+          </div>
+          <div class="metric-trend up">↑ Active</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#ff9f43">◎</div>
+          <div class="metric-body">
+            <div class="metric-value" id="m-complaints">—</div>
+            <div class="metric-label">Negative Feedback Alerts</div>
+          </div>
+          <div class="metric-trend">→ Tracked</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#ff4757">◆</div>
+          <div class="metric-body">
+            <div class="metric-value" id="m-critical">—</div>
+            <div class="metric-label">Active Recovery Cases</div>
+          </div>
+          <div class="metric-trend down" id="m-critical-label">↑ Urgent</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#2ed573">◑</div>
+          <div class="metric-body">
+            <div class="metric-value" id="m-resolution">—%</div>
+            <div class="metric-label">Sentiment Improvement</div>
+          </div>
+          <div class="metric-trend up">↑ Real-time</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Weekly Complaint Volume</div>
+          <canvas id="weeklyChart" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Severity Split</div>
+          <canvas id="severityDonut" height="140"></canvas>
+        </div>
+      </div>
+
+      <div class="activity-section">
+        <div class="section-title">Recent Activity Feed</div>
+        <div class="activity-feed" id="activity-feed">
+          <div class="loading-pulse">Loading activity...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PATIENT DATABASE PAGE ─── -->
+    <section class="page" id="page-patients">
+      <div class="page-header">
+        <h1>Patient Database</h1>
+        <p>Search and manage registered patients</p>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-input" id="patient-search" type="text" placeholder="🔍 Search by name, ID, or phone..." oninput="searchPatients()">
+        <select class="filter-select" id="dept-filter" onchange="searchPatients()">
+          <option value="">All Departments</option>
+          <option>Emergency</option><option>Cardiology</option><option>Neurology</option>
+          <option>Orthopedics</option><option>Pediatrics</option><option>Oncology</option><option>Radiology</option>
+        </select>
+        <button class="btn-primary" onclick="navigate('register')">+ Register New</button>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="patients-table">
+          <thead>
+            <tr>
+              <th>Patient ID</th><th>Name</th><th>Age</th><th>Gender</th>
+              <th>Phone</th><th>Department</th><th>Registered</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="patients-tbody">
+            <tr><td colspan="8" class="loading-cell">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Patient Detail Modal -->
+      <div class="modal-overlay" id="patient-modal">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2 id="modal-patient-name">Patient Details</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="modal-body" id="modal-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── REGISTER PATIENT PAGE ─── -->
+    <section class="page" id="page-register">
+      <div class="page-header">
+        <h1>Patient Registration</h1>
+        <p>Register a new patient into the system</p>
+      </div>
+
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="reg-name" placeholder="Enter full name" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Age *</label>
+            <input type="number" id="reg-age" placeholder="Age" min="0" max="150" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Gender *</label>
+            <select id="reg-gender" class="form-input">
+              <option value="">Select gender</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="reg-phone" placeholder="+1-555-0000" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Department *</label>
+            <select id="reg-dept" class="form-input">
+              <option value="">Select department</option>
+              <option>Emergency</option><option>Cardiology</option><option>Neurology</option>
+              <option>Orthopedics</option><option>Pediatrics</option><option>Oncology</option><option>Radiology</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="registerPatient()">⊕ Register Patient</button>
+          <button class="btn-ghost" onclick="clearRegForm()">Clear Form</button>
+        </div>
+        <div class="form-result" id="reg-result"></div>
+      </div>
+    </section>
+
+    <!-- ─── SUBMIT COMPLAINT PAGE ─── -->
+    <section class="page" id="page-submit-complaint">
+      <div class="page-header">
+        <h1>Submit Complaint</h1>
+        <p>File a new patient complaint for tracking</p>
+      </div>
+
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Patient ID *</label>
+            <div class="input-row">
+              <input type="text" id="cmp-patient-id" placeholder="Enter patient ID (e.g. PX-12345)" class="form-input">
+              <button class="btn-ghost small" onclick="lookupPatient()">Lookup</button>
+            </div>
+            <div class="patient-lookup-result" id="lookup-result"></div>
+          </div>
+          <div class="form-group">
+            <label>Department *</label>
+            <select id="cmp-dept" class="form-input">
+              <option value="">Select department</option>
+              <option>Emergency</option><option>Cardiology</option><option>Neurology</option>
+              <option>Orthopedics</option><option>Pediatrics</option><option>Oncology</option><option>Radiology</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Severity Level *</label>
+            <select id="cmp-severity" class="form-input">
+              <option value="">Select severity</option>
+              <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Complaint Description *</label>
+            <textarea id="cmp-desc" rows="5" placeholder="Describe the complaint in detail..." class="form-input"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="submitComplaint()">⊞ Submit Complaint</button>
+          <button class="btn-ghost" onclick="clearComplaintForm()">Clear</button>
+        </div>
+        <div class="form-result" id="cmp-result"></div>
+      </div>
+    </section>
+
+    <!-- ─── COMPLAINTS MANAGEMENT PAGE ─── -->
+    <section class="page" id="page-complaints">
+      <div class="page-header">
+        <h1>Complaint Management</h1>
+        <p>Monitor and resolve patient complaints</p>
+      </div>
+
+      <div class="toolbar">
+        <select class="filter-select" id="sev-filter" onchange="loadComplaints()">
+          <option value="">All Severities</option>
+          <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+        </select>
+        <select class="filter-select" id="status-filter" onchange="loadComplaints()">
+          <option value="">All Statuses</option>
+          <option>Open</option><option>In Progress</option><option>Resolved</option>
+        </select>
+        <button class="btn-primary" onclick="navigate('submit-complaint')">+ New Complaint</button>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Complaint ID</th><th>Patient</th><th>Department</th>
+              <th>Severity</th><th>Description</th><th>Status</th><th>Date</th><th>Update</th>
+            </tr>
+          </thead>
+          <tbody id="complaints-tbody">
+            <tr><td colspan="8" class="loading-cell">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── ANALYTICS PAGE ─── -->
+    <section class="page" id="page-analytics">
+      <div class="page-header">
+        <h1>Analytics & Insights</h1>
+        <p>Data-driven hospital performance metrics</p>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#4fc3f7">⏱</div>
+          <div class="metric-body">
+            <div class="metric-value" id="a-avg-res">—</div>
+            <div class="metric-label">Avg. Resolution (hrs)</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#2ed573">✓</div>
+          <div class="metric-body">
+            <div class="metric-value" id="a-resolved">—</div>
+            <div class="metric-label">Resolved</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#ff9f43">↻</div>
+          <div class="metric-body">
+            <div class="metric-value" id="a-inprogress">—</div>
+            <div class="metric-label">In Progress</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon" style="color:#ff4757">○</div>
+          <div class="metric-body">
+            <div class="metric-value" id="a-open">—</div>
+            <div class="metric-label">Open</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Complaints by Department</div>
+          <canvas id="deptPieChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Severity Distribution</div>
+          <canvas id="severityBarChart" height="220"></canvas>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-title">6-Month Complaint Trend</div>
+          <canvas id="monthlyLineChart" height="120"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── NOTIFICATIONS PAGE ─── -->
+    <section class="page" id="page-notifications">
+      <div class="page-header">
+        <h1>Notification Center</h1>
+        <p>Alerts and system notifications</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn-ghost" onclick="markAllRead()">✓ Mark All Read</button>
+      </div>
+      <div class="notifications-list" id="notifications-list">
+        <div class="loading-pulse">Loading notifications...</div>
+      </div>
+    </section>
+
+    <!-- ─── AI CHATBOT PAGE ─── -->
+    <section class="page" id="page-chatbot">
+      <div class="page-header">
+        <h1>MedAssist AI</h1>
+        <p>Intelligent virtual hospital assistant</p>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-avatar-wrapper">
+            <div class="chat-ai-avatar">✦</div>
+            <div class="chat-status-ring"></div>
+          </div>
+          <div>
+            <div class="chat-ai-name">MedAssist AI</div>
+            <div class="chat-ai-status">🟢 Online — Ready to assist</div>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg ai">
+            <div class="chat-bubble">
+              👋 Hello! I'm <strong>MedAssist AI</strong>, your intelligent hospital assistant. I can help you with:<br><br>
+              • Department locations & directions<br>
+              • Appointment scheduling info<br>
+              • Visiting hours & policies<br>
+              • General triage guidance<br><br>
+              How can I assist you today?
+            </div>
+            <div class="chat-time">Just now</div>
+          </div>
+        </div>
+
+        <div class="quick-replies">
+          <button class="quick-reply" onclick="sendQuickReply('Where is the Emergency Department?')">🚨 Emergency</button>
+          <button class="quick-reply" onclick="sendQuickReply('I need to schedule an appointment')">📅 Appointment</button>
+          <button class="quick-reply" onclick="sendQuickReply('What are the visiting hours?')">👥 Visiting Hours</button>
+          <button class="quick-reply" onclick="sendQuickReply('Where is the pharmacy?')">💊 Pharmacy</button>
+          <button class="quick-reply" onclick="sendQuickReply('I am in pain')">⚠️ Pain Help</button>
+        </div>
+
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" type="text" placeholder="Type your question..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="btn-send" onclick="sendMessage()">→</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ADMIN PANEL PAGE ─── -->
+    <section class="page" id="page-admin">
+      <div class="page-header">
+        <h1>Admin Panel</h1>
+        <p>System administration and data management</p>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <div class="admin-card-title">🖥 System Status</div>
+          <div class="status-list" id="system-status-list">
+            <div class="loading-pulse">Loading...</div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">📊 Data Overview</div>
+          <div class="status-list" id="data-overview">
+            <div class="loading-pulse">Loading...</div>
+          </div>
+        </div>
+
+        <div class="admin-card danger-zone">
+          <div class="admin-card-title">⚠️ Danger Zone</div>
+          <p class="danger-desc">These actions are irreversible. Proceed with caution.</p>
+          <div class="danger-actions">
+            <button class="btn-danger" onclick="clearData('notifications')">🗑 Clear Notifications</button>
+            <button class="btn-danger" onclick="clearData('complaints')">🗑 Clear All Complaints</button>
+            <button class="btn-danger critical" onclick="clearData('patients')">💀 Clear ALL Data</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SETTINGS PAGE ─── -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Platform configuration and preferences</p>
+      </div>
+
+      <div class="settings-grid">
+        <div class="settings-card">
+          <div class="settings-title">🔔 Alert Configuration</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">Enable Alerts</div>
+              <div class="setting-desc">Receive notifications for new complaints</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="set-alerts" onchange="saveSetting('alerts_enabled', this.checked?'1':'0')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">Critical Complaint Warnings</div>
+              <div class="setting-desc">Immediate notification for critical severity</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="set-critical" checked onchange="saveSetting('critical_warnings', this.checked?'1':'0')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">Auto-Escalate</div>
+              <div class="setting-desc">Auto-escalate unresolved complaints after 48hrs</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="set-escalate" onchange="saveSetting('auto_escalate', this.checked?'1':'0')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">🤖 AI Configuration</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">AI Patient Monitoring</div>
+              <div class="setting-desc">Enable AI-powered analytics and suggestions</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="set-ai" onchange="saveSetting('ai_monitoring', this.checked?'1':'0')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">Smart Triage Assist</div>
+              <div class="setting-desc">AI-assisted complaint severity classification</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="set-triage" checked onchange="saveSetting('smart_triage', this.checked?'1':'0')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">🎨 Display</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">Theme</div>
+              <div class="setting-desc">Interface color scheme</div>
+            </div>
+            <select class="form-input small" onchange="saveSetting('theme', this.value)">
+              <option value="dark">Dark (Default)</option>
+              <option value="midnight">Midnight Blue</option>
+              <option value="carbon">Carbon Black</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-banner" id="save-banner">✓ Settings saved successfully</div>
+    </section>
+
+  </div><!-- /pages-container -->
+</main>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
